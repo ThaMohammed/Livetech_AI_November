@@ -6,6 +6,10 @@ import { dashboardPage } from "../azkasurvey_pages/dashboardPage";
 import fs from "fs";
 import mysql from "mysql2/promise";
 
+  let _page: Page;
+  let azkaData:any;
+  let env = "qa";
+
 function getFormattedDateTime(): string {
   const now = new Date();
   const pad = (num: number) => num.toString().padStart(2, "0");
@@ -20,14 +24,9 @@ function getFormattedDateTime(): string {
 }
 
 test.describe("verify form filling functionality", () => {
-  let _page: Page;
-  let azkaData;
-  let azkasurvey_env;
-  let env = "qa";
   test.beforeAll("setup for describe", async () => {
     let azkaFile = fs.readFileSync(`./testdata/azkasurvey.json`, "utf-8");
     azkaData = await JSON.parse(azkaFile);
-    azkasurvey_env = azkaData;
   });
   test.beforeEach("start test", async () => {
     let browser = await chromium.launch({ headless: true });
@@ -36,12 +35,12 @@ test.describe("verify form filling functionality", () => {
     });
     _page = await context.newPage();
     let uiHelper = new uiHelpers(_page);
-    await uiHelper.navigateToUrl(azkasurvey_env.url);
+    await uiHelper.navigateToUrl(azkaData.url);
     await _page.waitForLoadState("load", { timeout: 100 });
     let login = new loginPage(_page);
     await login.loginToAzkasurvey(
-      azkasurvey_env.email,
-      azkasurvey_env.password
+      azkaData.email,
+      azkaData.password
     );
   });
   test.afterEach("clean up test", async () => {
@@ -87,9 +86,6 @@ test.describe("dahboard functioanlity", () => {
     let browser = await firefox.launch({ headless: true });
     page = await browser.newPage();
     let uiHelper = new uiHelpers(page);
-    // await uiHelper.navigateToUrl();
-    // let login = new loginPage(page);
-    // await login.loginToAzkasurvey();
   });
   test("verify that user can see the existing records", async () => {
     await page.getByRole("link", { name: "Dashboard" }).click();
@@ -143,7 +139,7 @@ test.describe("verify form filling functionality using Database", () => {
   let azkaData;
   let azkasurvey_env;
   let env = "qa";
-  let dbOutput;
+  let dbOutput:any;
 
   test.beforeAll("setup for describe", async () => {
     const db = await mysql.createConnection({
@@ -152,15 +148,15 @@ test.describe("verify form filling functionality using Database", () => {
       password: "Root@123",
       database: "qa_chronicles",
     });
-    const [rows] = await db.execute(
+    const [rows]= await db.execute(
       "select * from azka_data"
     );
     // dbOutput = rows[0];
     let dbRows = rows as any[];
     for (let i = 0; i < dbRows.length; i++) {
-      let name = rows[i].name;
+      let name = dbRows[i].name;
       if (name == "test_user") {
-        dbOutput = rows[i];
+        dbOutput = dbRows[i];
         break;
       }
     }
